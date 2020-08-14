@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+      integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+      crossorigin="anonymous"
+    />
+    <title>Todo App</title>
+  </head>
+  <body class="bg-skyblue">
+    <div class="container">
+      <div class="row">
+        <div class="col">
+          <h1 class="text-center">Todo App</h1>
+          <form method="POST">
+            <div class="row">
+              <div class="col-md-8">
+                <input
+                  type="text"
+                  name="task"
+                  id="task"
+                  class="form-control mb-3"
+                  placeholder="Enter Task"
+                  required
+                />
+              </div>
+              <div class="col-md-4">
+                <button
+                  onclick="addTasks(event)"
+                  class="btn btn-info"
+                  type="submit"
+                >
+                  Submit
+                </button>
+              </div>
+            </div>
+          </form>
+          <br />
+
+          <div id="msg"></div>
+          <div id="tasks"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      var tasksEl = document.querySelector("#tasks");
+      var task = document.querySelector("#task");
+      var msg = document.querySelector("#msg");
+      var url = "https://bharath-todo.herokuapp.com/api";
+
+      function getTasks() {
+        fetch(`${url}/task-list`)
+          .then((res) => res.json())
+          .then(renderTasks)
+          .catch((err) => alert(err));
+      }
+
+      function renderTasks(tasks) {
+        tasksEl.innerHTML = "";
+        tasks.map((task) => {
+          tasksEl.innerHTML += `
+            <div class="card container p-3 mb-3" data-id=${task.id}>
+                    <p style='cursor:pointer' onclick='markTask(${JSON.stringify(
+                      task
+                    )})'>
+   ${task.completed ? "<strike>" + task.title + "</strike>" : task.title}
+                </p>
+                <p>
+                    <button class='btn btn-sm m-1 btn-success'
+                    onclick='editTask(${JSON.stringify(task)})'>Edit</button>
+                    <button class='btn btn-sm m-1 btn-danger'
+                    onclick='deleteTask(${task.id})'>Delete</button>
+                </p>
+
+            </div>
+            `;
+        });
+      }
+
+      getTasks();
+      var activeItem = null;
+
+      function addTasks(e) {
+        e.preventDefault();
+
+        var url = "https://bharath-todo.herokuapp.com/api";
+
+        var addUrl = `${url}/task-create/`;
+        var updateUrl = `${url}/task-update/${activeItem.id}/`;
+
+        if (activeItem) {
+          var url = updateUrl;
+          activeItem = null;
+        }
+
+        fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: task.value,
+            completed: false,
+          }),
+        })
+          .then((resp) => resp.json())
+          //   .then((data) => msg.innerHTML = 'Task added')
+          .then((data) => getTasks())
+          .catch((err) => alert(err));
+        task.value = "";
+      }
+
+      function deleteTask(id) {
+        console.log("delete");
+        fetch(`${url}/task-delete/${id}`, {
+          method: "DELETE",
+        })
+          .then((resp) => resp.json())
+          //   .then((data) => msg.innerHTML = 'Task added')
+          .then((data) => getTasks())
+          .catch((err) => alert(err));
+      }
+
+      function editTask(task) {
+        // console.log("edit", task);
+        activeItem = task;
+        document.getElementById("task").value = activeItem.title;
+      }
+
+      function markTask(item) {
+        item.completed = !item.completed;
+
+        fetch(`${url}/task-update/${item.id}/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: item.title,
+            completed: item.completed,
+          }),
+        })
+          .then((resp) => resp.json())
+          //   .then((data) => msg.innerHTML = 'Task added')
+          .then((data) => getTasks())
+          .catch((err) => alert(err));
+      }
+    </script>
+  </body>
+</html>
+
+<!-- href=${url}/task-update/${task.id} -->
+<!-- href=${url}/task-delete/${task.id} -->
